@@ -181,6 +181,7 @@ while True:
                     P.midAir = True
                     play_sound('jump')          
 
+
     # Gameplay
     if game_state == 1:
         # Blit
