@@ -150,22 +150,24 @@ def start_game(player):
 def step(action):
     global P
     if not P.midAir and not P.tired:
-        if action == 0:
-            pass  # No action for action == 0
-        elif action == 1:
+        if action == 0:    # Do nothing
+            P.midStrafe = False
+        elif action == 1:  # Move Left
             P.player_direction = -1
             P.midStrafe = True
-        elif action == 2:
+        elif action == 2: # Move Right
             P.player_direction = 1
             P.midStrafe = True
-        elif action == 3:
+        elif action == 3: # Jump Low
             P.midStrafe = False
             P.player_gravity = -13
             P.midAir = True
-        elif action == 4:
+            play_sound('jump')
+        elif action == 4: # Jump High
             P.midStrafe = False
             P.player_gravity = -19.5
             P.midAir = True
+            play_sound('jump')
 
     game_logic()
     # Run the game 1 frame
@@ -180,50 +182,7 @@ def step(action):
 # ==================================================================== #
 
 def game_logic():
-    global level
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            exit()
-        
-        # click to get the Cord of the Cursor
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if P.player_rect.collidepoint(event.pos):
-                P.player_gravity = -15
-        
-        # Keyboard press down
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_a and not P.midAir and not P.tired:
-                P.player_direction = -1
-                P.midStrafe = True
-            if event.key == pygame.K_d and not P.midAir and not P.tired:
-                P.player_direction = 1
-                P.midStrafe = True
-            if event.key == pygame.K_c and not P.midAir and not P.tired:
-                P.midStrafe = False
-                P.player_gravity = -13
-                P.midAir = True
-                play_sound('jump')
-            if event.key == pygame.K_v and not P.midAir and not P.tired:
-                P.midStrafe = False
-                P.player_gravity = -19.5
-                P.midAir = True
-                play_sound('jump')
-            if event.key == pygame.K_r:
-                start_game(P)
-            # ============================================ #
-            if event.key == pygame.K_n:
-                level += 1
-                P.player_rect.y = 800
-            if event.key == pygame.K_m:
-                level -= 1
-                P.player_rect.y = 800
-
-        if event.type == pygame.KEYUP:
-            if event.key == pygame.K_a and P.midStrafe:
-                P.midStrafe = False
-            if event.key == pygame.K_d and P.midStrafe:
-                P.midStrafe = False        
+    global level     
 
     # Gameplay
     # Blit
@@ -304,20 +263,56 @@ def game_logic():
     P.player_animation()
     screen.blit(P.player_surf,P.player_rect)
 
-    # pygame.display.update()
-    # clock.tick(fps)
-
 
 # start_game(P)
 # while True:
 #     game_logic()
 
 env = AgentJEnv()
+action = 0
 while True:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            exit()
+        
+        # click to get the Cord of the Cursor
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if P.player_rect.collidepoint(event.pos):
+                P.player_gravity = -15
+        
+        # Keyboard press down
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_a and not P.midAir and not P.tired:
+                action = 1
+            if event.key == pygame.K_d and not P.midAir and not P.tired:
+                action = 2
+            if event.key == pygame.K_c and not P.midAir and not P.tired:
+                action = 3
+            if event.key == pygame.K_v and not P.midAir and not P.tired:
+                action = 4
+            if event.key == pygame.K_r:
+                start_game(P)
+            # ============================================ #
+            if event.key == pygame.K_n:
+                level += 1
+                P.player_rect.y = 800
+            if event.key == pygame.K_m:
+                level -= 1
+                P.player_rect.y = 800
 
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_a and P.midStrafe:
+                action = 0
+            if event.key == pygame.K_d and P.midStrafe:
+                action = 0  
 
-    action = random.choice([0, 1, 2, 3, 4])
+    # action = random.choice([0, 1, 2, 3, 4])
     state, reward, done = env.step(action)
+
+    # stop the jumping action
+    if action == 3 or action == 4:
+        action = 0
 
     env.render()
 
