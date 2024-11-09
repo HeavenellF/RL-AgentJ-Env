@@ -125,8 +125,8 @@ class AgentJEnv(gym.Env):
         return self.get_state()
 
     def step(self, action):
-        state, reward, done, info = step(action)
-        return state, reward, done, info
+        state, reward, done = step(action)
+        return state, reward, done
     
     def get_state(self):
         return (level, P.player_rect.x, P.player_rect.y, P.player_gravity, P.player_direction)
@@ -143,8 +143,7 @@ def start_game(player):
     bgm_sound.stop()
     bgm_sound.play(-1)
     level = 1
-    player.player_gravity = 0
-    player.player_rect = player.player_surf.get_rect(midbottom= (width/2,700))
+    player.player_rect = player.player_surf.get_rect(midbottom= (width/2,825))
 # =========================================================================== #
 
 # ====================== STEP FUNCTION GAME ========================== #
@@ -177,8 +176,7 @@ def step(action):
     state = 0
     reward = 0
     done = False
-    info = {}
-    return state, reward, done, info
+    return state, reward, done
 # ==================================================================== #
 
 def game_logic():
@@ -306,11 +304,24 @@ def game_logic():
     P.player_animation()
     screen.blit(P.player_surf,P.player_rect)
 
-    pygame.display.update()
-    clock.tick(fps)
+    # pygame.display.update()
+    # clock.tick(fps)
 
 
-start_game(P)
+# start_game(P)
+# while True:
+#     game_logic()
 
+env = AgentJEnv()
 while True:
-    game_logic()
+
+
+    action = random.choice([0, 1, 2, 3, 4])
+    state, reward, done = env.step(action)
+
+    env.render()
+
+    if done:
+        break
+
+    clock.tick(fps)
