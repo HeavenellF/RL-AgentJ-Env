@@ -3,31 +3,13 @@ import pygame
 import random
 from sys import exit
 
+import gym
+from gym import spaces
+import numpy as np
+
 from Button import mainMenu_elements, gameOver_elements
 from collision import get_collision_side
 import levelsobject
-
-# =========================================================================== #
-def start_game2(player):
-    global game_state, level
-    bgm_sound.play(-1)
-    game_state = 1
-    level = 1
-    player.midAir = False
-    player.midStrafe = False
-    player.player_rect = player.player_surf.get_rect(midbottom= (width/2,700))
-# =========================================================================== #
-
-def play_sound(type):
-    if type == 'wall':
-        random_number = random.randint(1, 3)
-        if random_number == 1 : wallbounce1_sound.play()
-        elif random_number == 2 : wallbounce2_sound.play()
-        elif random_number == 3 : wallbounce3_sound.play()
-    elif type == 'jump':
-        jump_sound.play()
-    elif type == 'fell':
-        fell_sound.play()
 
 width = 1200
 height = 900
@@ -40,7 +22,21 @@ clock = pygame.time.Clock()
 
 game_state = 1
 
-#====================================== mp3 ==============================#
+#========================== LEVELS OBJECT ================================#
+levels_object = [levelsobject.level1_object(width,height), 
+                 levelsobject.level2_object(width,height), 
+                 levelsobject.level3_object(width,height),
+                 levelsobject.level4_object(width,height),
+                 levelsobject.level5_object(width,height),
+                 levelsobject.level6_object(width,height),
+                 levelsobject.level7_object(width,height),
+                 levelsobject.level8_object(width,height),
+                 levelsobject.levelend1_object(width,height),
+                 levelsobject.levelend2_object(width,height),
+                 levelsobject.levelend3_object(width,height)]
+level = 0
+#=========================================================================#
+#====================================== MP3 ==============================#
 bgm_sound = pygame.mixer.Sound('sound/bgm.mp3')
 bgm_sound.set_volume(0.5)
 finish_sound = pygame.mixer.Sound('sound/finish.mp3')
@@ -55,7 +51,18 @@ jump_sound = pygame.mixer.Sound('sound/jump.mp3')
 jump_sound.set_volume(0.9)
 fell_sound = pygame.mixer.Sound('sound/fell.mp3')
 fell_sound.set_volume(1)
-#====================================== mp3 ==============================#
+
+def play_sound(type):
+    if type == 'wall':
+        random_number = random.randint(1, 3)
+        if random_number == 1 : wallbounce1_sound.play()
+        elif random_number == 2 : wallbounce2_sound.play()
+        elif random_number == 3 : wallbounce3_sound.play()
+    elif type == 'jump':
+        jump_sound.play()
+    elif type == 'fell':
+        fell_sound.play()
+#=========================================================================#
 
 #========================== AGENT CLASS ================================#
 class Player:
@@ -102,32 +109,77 @@ class Player:
 
 P = Player()
 
-# ===================================================================================== #
+# ================== CLASS FOR GAME ENVIRONMENT ======================== #
 
-levels_object = [levelsobject.level1_object(width,height), 
-                 levelsobject.level2_object(width,height), 
-                 levelsobject.level3_object(width,height),
-                 levelsobject.level4_object(width,height),
-                 levelsobject.level5_object(width,height),
-                 levelsobject.level6_object(width,height),
-                 levelsobject.level7_object(width,height),
-                 levelsobject.level8_object(width,height),
-                 levelsobject.levelend1_object(width,height),
-                 levelsobject.levelend2_object(width,height),
-                 levelsobject.levelend3_object(width,height)]
-level = 0
+class AgentJEnv(gym.Env):
+    def __init__(self):
+        super(AgentJEnv, self).__init__()
+        self.action_space = spaces.Discrete(5)
+        self.observation_space = spaces.Box(
+            low=np.array([0, 0, 0, -1, 0]),  # lower bounds of each component
+            high=np.array([np.inf, np.inf, 10, 1, 1]),  # upper bounds for each component
+            dtype=np.float32  # data type for each component (32-bit float)
+        )
+        self.reward_range = (-float('inf'), float('inf'))
+        self.reset()
 
-# ====================== INPUT ACTION FOR AI ========================== #
+    def reset(self):
+        # Reset the game environtment
+        global P
+        P = Player() # Reset the player
+        start_game(P)
+        return self.get_state()
+
+    def step(self, action):
+        state, reward, done, info = step(action)
+        return state, reward, done, info
+    
+    def get_state(self):
+        return (level, P.player_rect.x, P.player_rect.y, P.player_gravity, P.player_direction)
+
+    def render(self):
+        screen.blit(P.player_surf,P.player_rect)
+        pygame.display.update()
+    
+# ===================================================================== #
+
+def start_game(player):
+    global game_state, level
+    bgm_sound.play(-1)
+    game_state = 1
+    level = 1
+    player.midAir = False
+    player.midStrafe = False
+    player.player_rect = player.player_surf.get_rect(midbottom= (width/2,700))
+# =========================================================================== #
+
+# ====================== STEP FUNCTION GAME ========================== #
 def step(action):
+    global P
     if action == 0:
         pass
     elif action == 1:
         pass
+    elif action == 2:
+        pass
+    elif action == 3:
+        pass
+    elif action == 4:
+        pass
 
+    # Run the game 1 frame
 
+    # Get the new state
+    # Get the reward
+    # Check if the game is done
+    state = 0
+    reward = 0
+    done = False
+    info = {}
+    return state, reward, done, info
+# ==================================================================== #
 
-# start_game()
-start_game2(P)
+start_game(P)
 
 while True:
     for event in pygame.event.get():
@@ -143,9 +195,9 @@ while True:
         if game_state == 1:
             # Keyboard press down
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE and not P.midAir and not P.tired:
-                    P.jumpCharge += 0.3
-                    P.midStrafe = False
+                # if event.key == pygame.K_SPACE and not P.midAir and not P.tired:
+                #     P.jumpCharge += 0.3
+                #     P.midStrafe = False
                 if event.key == pygame.K_a and not P.midAir and not P.tired:
                     P.player_direction = -1
                     if P.jumpCharge == 0:
@@ -175,11 +227,11 @@ while True:
                     P.midStrafe = False
                 if event.key == pygame.K_d and P.midStrafe:
                     P.midStrafe = False
-                if event.key == pygame.K_SPACE and not P.midAir and P.jumpCharge != 0:
-                    P.player_gravity = -1.3 * P.jumpCharge
-                    P.jumpCharge = 0
-                    P.midAir = True
-                    play_sound('jump')          
+                # if event.key == pygame.K_SPACE and not P.midAir and P.jumpCharge != 0:
+                #     P.player_gravity = -1.3 * P.jumpCharge
+                #     P.jumpCharge = 0
+                #     P.midAir = True
+                #     play_sound('jump')          
 
 
     # Gameplay
