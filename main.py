@@ -2,6 +2,7 @@
 import pygame
 import random
 from sys import exit
+import os
 
 import gym
 from gym import spaces
@@ -11,65 +12,14 @@ from Button import mainMenu_elements, gameOver_elements
 from collision import get_collision_side
 import levelsobject
 
-width = 1200
-height = 900
-fps = 60
-
-pygame.init()
-screen = pygame.display.set_mode((width,height))
-pygame.display.set_caption('Agent J')    # Window Name here
-clock = pygame.time.Clock()
-
-#========================== LEVELS OBJECT ================================#
-levels_object = [levelsobject.level1_object(width,height), 
-                 levelsobject.level2_object(width,height), 
-                 levelsobject.level3_object(width,height),
-                 levelsobject.level4_object(width,height),
-                 levelsobject.level5_object(width,height),
-                 levelsobject.level6_object(width,height),
-                 levelsobject.level7_object(width,height),
-                 levelsobject.level8_object(width,height),
-                 levelsobject.levelend1_object(width,height),
-                 levelsobject.levelend2_object(width,height),
-                 levelsobject.levelend3_object(width,height)]
-level = 0
-#=========================================================================#
-#====================================== MP3 ==============================#
-bgm_sound = pygame.mixer.Sound('sound/bgm.mp3')
-bgm_sound.set_volume(0.5)
-finish_sound = pygame.mixer.Sound('sound/finish.mp3')
-finish_sound.set_volume(0.5)
-wallbounce1_sound = pygame.mixer.Sound('sound/wallhit1.mp3')
-wallbounce1_sound.set_volume(0.8)
-wallbounce2_sound = pygame.mixer.Sound('sound/wallhit2.mp3')
-wallbounce2_sound.set_volume(0.8)
-wallbounce3_sound = pygame.mixer.Sound('sound/wallhit3.mp3')
-wallbounce3_sound.set_volume(0.8)
-jump_sound = pygame.mixer.Sound('sound/jump.mp3')
-jump_sound.set_volume(0.9)
-fell_sound = pygame.mixer.Sound('sound/fell.mp3')
-fell_sound.set_volume(1)
-
-def play_sound(type):
-    if type == 'wall':
-        random_number = random.randint(1, 3)
-        if random_number == 1 : wallbounce1_sound.play()
-        elif random_number == 2 : wallbounce2_sound.play()
-        elif random_number == 3 : wallbounce3_sound.play()
-    elif type == 'jump':
-        jump_sound.play()
-    elif type == 'fell':
-        fell_sound.play()
-#=========================================================================#
-
 #========================== AGENT CLASS ================================#
 class Player:
     def __init__(self):
-        self.player_stand = pygame.image.load('image/player/playerstand.png').convert_alpha()
-        self.player_walk_1 = pygame.image.load('image/player/playerwalk1.png').convert_alpha()
-        self.player_charge = pygame.image.load('image/player/playercharge.png').convert_alpha()
-        self.player_jump = pygame.image.load('image/player/playerjump.png').convert_alpha()
-        self.player_fell = pygame.image.load('image/player/playerfell.png').convert_alpha()
+        self.player_stand = pygame.image.load('image/player/playerstand.png')
+        self.player_walk_1 = pygame.image.load('image/player/playerwalk1.png')
+        self.player_charge = pygame.image.load('image/player/playercharge.png')
+        self.player_jump = pygame.image.load('image/player/playerjump.png')
+        self.player_fell = pygame.image.load('image/player/playerfell.png')
         self.player_state = [self.player_stand, self.player_walk_1, self.player_jump, self.player_fell]
         self.player_index = 0
 
@@ -101,13 +51,32 @@ class Player:
         if self.player_direction == 1:
             self.player_surf = pygame.transform.flip(self.player_surf, True, False)
 
-P = Player()
+# P = Player()
 
 # ================== CLASS FOR GAME ENVIRONMENT ======================== #
 
 class AgentJEnv(gym.Env):
-    def __init__(self):
+    def __init__(self, render_mode=None):
         super(AgentJEnv, self).__init__()
+        # Set the display driver to 'dummy' if running in headless mode
+        self.render_mode = render_mode
+        if self.render_mode is None:
+            os.environ["SDL_VIDEODRIVER"] = "dummy"  # For headless mode
+        pygame.init()
+        self.bgm_sound = pygame.mixer.Sound('sound/bgm.mp3')
+        self.bgm_sound.set_volume(0.5)
+        self.finish_sound = pygame.mixer.Sound('sound/finish.mp3')
+        self.finish_sound.set_volume(0.5)
+        self.wallbounce1_sound = pygame.mixer.Sound('sound/wallhit1.mp3')
+        self.wallbounce1_sound.set_volume(0.8)
+        self.wallbounce2_sound = pygame.mixer.Sound('sound/wallhit2.mp3')
+        self.wallbounce2_sound.set_volume(0.8)
+        self.wallbounce3_sound = pygame.mixer.Sound('sound/wallhit3.mp3')
+        self.wallbounce3_sound.set_volume(0.8)
+        self.jump_sound = pygame.mixer.Sound('sound/jump.mp3')
+        self.jump_sound.set_volume(0.9)
+        self.fell_sound = pygame.mixer.Sound('sound/fell.mp3')
+        self.fell_sound.set_volume(1)
         self.action_space = spaces.Discrete(5)
         self.observation_space = spaces.Box(
             low=np.array([0, 0, 0, -1, 0]),  # lower bounds of each component
@@ -115,203 +84,226 @@ class AgentJEnv(gym.Env):
             dtype=np.float32  # data type for each component (32-bit float)
         )
         self.reward_range = (-float('inf'), float('inf'))
+
+        self.width = 1200
+        self.height = 900
+        self.fps = 60
+
+        if self.render_mode == "human":
+            self.screen = pygame.display.set_mode((self.width, self.height))
+            pygame.display.set_caption('Agent J')
+            self.clock = pygame.time.Clock()
+        else:
+            self.screen = None
+            self.clock = None
+
+        #========================== LEVELS OBJECT ================================#
+        self.levels_object = [
+            levelsobject.level1_object(self.width, self.height),
+            levelsobject.level2_object(self.width, self.height),
+            levelsobject.level3_object(self.width, self.height),
+            levelsobject.level4_object(self.width, self.height),
+            levelsobject.level5_object(self.width, self.height),
+            levelsobject.level6_object(self.width, self.height),
+            levelsobject.level7_object(self.width, self.height),
+            levelsobject.level8_object(self.width, self.height),
+            levelsobject.levelend1_object(self.width, self.height),
+            levelsobject.levelend2_object(self.width, self.height),
+            levelsobject.levelend3_object(self.width, self.height)
+        ]
+
+        self.level = 0
+        #=========================================================================#
         self.reset()
 
     def reset(self):
         # Reset the game environtment
-        global P
-        P = Player() # Reset the player
-        start_game(P)
+        self.P = Player() # Reset the player
+        self.start_game()
         return self.get_state()
 
     def step(self, action):
-        state, reward, done = step(action)
+        if not self.P.midAir and not self.P.tired:
+            if action == 0:    # Do nothing
+                self.P.midStrafe = False
+            elif action == 1:  # Move Left
+                self.P.player_direction = -1
+                self.P.midStrafe = True
+            elif action == 2: # Move Right
+                self.P.player_direction = 1
+                self.P.midStrafe = True
+            elif action == 3: # Jump Low
+                self.P.midStrafe = False
+                self.P.player_gravity = -13
+                self.P.midAir = True
+                self.play_sound('jump')
+            elif action == 4: # Jump High
+                self.P.midStrafe = False
+                self.P.player_gravity = -19.5
+                self.P.midAir = True
+                self.play_sound('jump')
+
+        self.game_logic()
+        
+        state = 0
+        reward = 0
+        done = False
         return state, reward, done
     
     def get_state(self):
-        return (level, P.player_rect.x, P.player_rect.y, P.player_gravity, P.player_direction)
+        return (self.level, self.P.player_rect.x, self.P.player_rect.y, self.P.player_gravity, self.P.player_direction)
 
     def render(self):
-        screen.blit(P.player_surf,P.player_rect)
-        pygame.display.update()
-        # pygame.display.flip()
-    
-# ===================================================================== #
+        if self.render_mode == "human":
+            self.screen.blit(self.P.player_surf,self.P.player_rect)
+            pygame.display.update()
+            self.clock.tick(self.fps)
 
-def start_game(player):
-    global level
-    bgm_sound.stop()
-    bgm_sound.play(-1)
-    level = 1
-    player.player_rect = player.player_surf.get_rect(midbottom= (width/2,825))
-# =========================================================================== #
+    def close(self):
+        pygame.quit()
 
-# ====================== STEP FUNCTION GAME ========================== #
-def step(action):
-    global P
-    if not P.midAir and not P.tired:
-        if action == 0:    # Do nothing
-            P.midStrafe = False
-        elif action == 1:  # Move Left
-            P.player_direction = -1
-            P.midStrafe = True
-        elif action == 2: # Move Right
-            P.player_direction = 1
-            P.midStrafe = True
-        elif action == 3: # Jump Low
-            P.midStrafe = False
-            P.player_gravity = -13
-            P.midAir = True
-            play_sound('jump')
-        elif action == 4: # Jump High
-            P.midStrafe = False
-            P.player_gravity = -19.5
-            P.midAir = True
-            play_sound('jump')
+    def play_sound(self, type):
+        if type == 'wall':
+            random_number = random.randint(1, 3)
+            if random_number == 1 : self.wallbounce1_sound.play()
+            elif random_number == 2 : self.wallbounce2_sound.play()
+            elif random_number == 3 : self.wallbounce3_sound.play()
+        elif type == 'jump':
+            self.jump_sound.play()
+        elif type == 'fell':
+            self.fell_sound.play()
 
-    game_logic()
-    # Run the game 1 frame
+    def start_game(self):
+        self.bgm_sound.stop()
+        self.bgm_sound.play(-1)
+        self.level = 1
+        self.P.player_rect = self.P.player_surf.get_rect(midbottom= (self.width/2,825))
 
-    # Get the new state
-    # Get the reward
-    # Check if the game is done
-    state = 0
-    reward = 0
-    done = False
-    return state, reward, done
-# ==================================================================== #
+    def game_logic(self):
+        """" Game Logic """
+        # Blit
+        for surf, rect, _ in self.levels_object[self.level-1]:
+            if self.render_mode == "human":
+                self.screen.blit(surf, rect)
 
-def game_logic():
-    global level     
+        # Jumping 
+        self.P.player_gravity += 0.6
+        self.P.player_rect.y += self.P.player_gravity
+        if self.P.midAir:
+            self.P.player_rect.x += self.P.player_direction*10
+        # Move the Character
+        if self.P.midStrafe:
+            self.P.player_rect.x += self.P.player_direction*5
+        # Stop when touching a Border
+        if self.P.player_rect.right >= self.width:
+            self.P.midStrafe = False
+            self.P.player_rect.right = self.width
+            if self.P.midAir: 
+                self.P.player_direction *= -1
+                self.play_sound('wall')
+        if self.P.player_rect.left <= 0:
+            self.P.player_rect.left = 0
+            self.P.midStrafe = False
+            if self.P.midAir: 
+                self.P.player_direction *= -1
+                self.play_sound('wall')
 
-    # Gameplay
-    # Blit
-    for surf, rect, _ in levels_object[level-1]:
-        screen.blit(surf, rect)
+        self.P.onAir += 1
+        for platform_surf, platform_rect, platform in self.levels_object[self.level-1]:
+            if platform:
+                if self.P.player_rect.colliderect(platform_rect):
+                    side = get_collision_side(self.P.player_rect, platform_rect)
+                    if side == 'top':
+                        self.P.player_rect.top = platform_rect.bottom
+                        if self.P.midAir: 
+                            self.P.player_gravity = 0
+                            self.play_sound('wall')
+                    elif side == 'bottom':
+                        if self.P.player_gravity >= 30:
+                            self.P.tired = True
+                            self.P.midStrafe = False
+                            self.play_sound('fell')
+                        if self.P.tired:
+                            self.P.rest += 1
+                            if self.P.rest >= 90:
+                                self.P.tired = False
+                                self.P.rest = 0
+                        self.P.player_gravity = 0
+                        self.P.player_rect.bottom = platform_rect.top + 2
+                        self.P.midAir = False
+                    elif side == 'right':
+                        if not self.P.midStrafe: 
+                            self.P.player_direction *= -1
+                            self.play_sound('wall')
+                        self.P.player_rect.right = platform_rect.left
+                    elif side == 'left':
+                        if not self.P.midStrafe: 
+                            self.P.player_direction *= -1
+                            self.play_sound('wall')
+                        self.P.player_rect.left = platform_rect.right
 
-    # Jumping 
-    P.player_gravity += 0.6
-    P.player_rect.y += P.player_gravity
-    if P.midAir:
-        P.player_rect.x += P.player_direction*10
-    # Move the Character
-    if P.midStrafe:
-        P.player_rect.x += P.player_direction*5
-    # Stop when touching a Border
-    if P.player_rect.right >= width:
-        P.midStrafe = False
-        P.player_rect.right = width
-        if P.midAir: 
-            P.player_direction *= -1
-            play_sound('wall')
-    if P.player_rect.left <= 0:
-        P.player_rect.left = 0
-        P.midStrafe = False
-        if P.midAir: 
-            P.player_direction *= -1
-            play_sound('wall')
+        # check if the Player reach top or bottom
+        if self.P.player_rect.top <= 0:
+            self.P.player_rect.top += self.height
+            self.level += 1
+        elif self.P.player_rect.top >= self.height:
+            self.P.player_rect.top -= self.height
+            self.level -= 1
 
-    P.onAir += 1
-    for platform_surf, platform_rect, platform in levels_object[level-1]:
-        if platform:
-            if P.player_rect.colliderect(platform_rect):
-                side = get_collision_side(P.player_rect, platform_rect)
-                if side == 'top':
-                    P.player_rect.top = platform_rect.bottom
-                    if P.midAir: 
-                        P.player_gravity = 0
-                        play_sound('wall')
-                elif side == 'bottom':
-                    if P.player_gravity >= 30:
-                        P.tired = True
-                        P.midStrafe = False
-                        play_sound('fell')
-                    if P.tired:
-                        P.rest += 1
-                        if P.rest >= 90:
-                            P.tired = False
-                            P.rest = 0
-                    P.player_gravity = 0
-                    P.player_rect.bottom = platform_rect.top + 2
-                    P.midAir = False
-                elif side == 'right':
-                    if not P.midStrafe: 
-                        P.player_direction *= -1
-                        play_sound('wall')
-                    P.player_rect.right = platform_rect.left
-                elif side == 'left':
-                    if not P.midStrafe: 
-                        P.player_direction *= -1
-                        play_sound('wall')
-                    P.player_rect.left = platform_rect.right
+        # Close the game if done
+        if self.level == len(self.levels_object):
+            if (self.P.player_rect.right >= 460 and self.P.player_rect.right <= 740) or (self.P.player_rect.left >= 460 and self.P.player_rect.left <= 740):
+                if self.P.player_rect.centery <= 630:
+                    pygame.quit()
+                    exit()
 
-    # check if the Player reach top or bottom
-    if P.player_rect.top <= 0:
-        P.player_rect.top += height
-        level += 1
-    elif P.player_rect.top >= height:
-        P.player_rect.top -= height
-        level -= 1
+        self.P.player_animation()
 
-    # Close the game if done
-    if level == len(levels_object):
-        if (P.player_rect.right >= 460 and P.player_rect.right <= 740) or (P.player_rect.left >= 460 and P.player_rect.left <= 740):
-            if P.player_rect.centery <= 630:
-                pygame.quit()
-                exit()
-
-    P.player_animation()
-    screen.blit(P.player_surf,P.player_rect)
-
-
-# start_game(P)
-# while True:
-#     game_logic()
-
-env = AgentJEnv()
+env = AgentJEnv(render_mode="human")
+state = env.reset()
 action = 0
+i = 0
 while True:
+    i += 1
+    print(i)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            pygame.quit()
+            env.close()
             exit()
         
         # click to get the Cord of the Cursor
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if P.player_rect.collidepoint(event.pos):
-                P.player_gravity = -15
+            print(event.pos)
         
         # Keyboard press down
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_a and not P.midAir and not P.tired:
+            if event.key == pygame.K_a:
                 action = 1
-            if event.key == pygame.K_d and not P.midAir and not P.tired:
+            if event.key == pygame.K_d:
                 action = 2
-            if event.key == pygame.K_c and not P.midAir and not P.tired:
+            if event.key == pygame.K_c:
                 action = 3
-            if event.key == pygame.K_v and not P.midAir and not P.tired:
+            if event.key == pygame.K_v:
                 action = 4
             if event.key == pygame.K_r:
-                start_game(P)
+                state = env.reset()
             # ============================================ #
             if event.key == pygame.K_n:
-                level += 1
-                P.player_rect.y = 800
+                env.level += 1
             if event.key == pygame.K_m:
-                level -= 1
-                P.player_rect.y = 800
+                env.level -= 1
 
         if event.type == pygame.KEYUP:
-            if event.key == pygame.K_a and P.midStrafe:
+            if event.key == pygame.K_a and env.P.midStrafe:
                 action = 0
-            if event.key == pygame.K_d and P.midStrafe:
+            if event.key == pygame.K_d and env.P.midStrafe:
                 action = 0  
 
     # action = random.choice([0, 1, 2, 3, 4])
     state, reward, done = env.step(action)
 
     # stop the jumping action
-    if action == 3 or action == 4:
+    if action in (3,4):
         action = 0
 
     env.render()
@@ -319,4 +311,4 @@ while True:
     if done:
         break
 
-    clock.tick(fps)
+env.close()
