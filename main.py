@@ -15,11 +15,11 @@ import levelsobject
 #========================== AGENT CLASS ================================#
 class Player:
     def __init__(self):
-        self.player_stand = pygame.image.load('image/player/playerstand.png')
-        self.player_walk_1 = pygame.image.load('image/player/playerwalk1.png')
-        self.player_charge = pygame.image.load('image/player/playercharge.png')
-        self.player_jump = pygame.image.load('image/player/playerjump.png')
-        self.player_fell = pygame.image.load('image/player/playerfell.png')
+        self.player_stand = pygame.image.load('image/player/playerstand.png').convert_alpha()
+        self.player_walk_1 = pygame.image.load('image/player/playerwalk1.png').convert_alpha()
+        self.player_charge = pygame.image.load('image/player/playercharge.png').convert_alpha()
+        self.player_jump = pygame.image.load('image/player/playerjump.png').convert_alpha()
+        self.player_fell = pygame.image.load('image/player/playerfell.png').convert_alpha()
         self.player_state = [self.player_stand, self.player_walk_1, self.player_jump, self.player_fell]
         self.player_index = 0
 
@@ -89,11 +89,13 @@ class AgentJEnv(gym.Env):
         self.height = 900
         self.fps = 60
 
+
         if self.render_mode == "human":
             self.screen = pygame.display.set_mode((self.width, self.height))
             pygame.display.set_caption('Agent J')
             self.clock = pygame.time.Clock()
         else:
+            pygame.display.set_mode((1,1))
             self.screen = None
             self.clock = None
 
@@ -264,8 +266,6 @@ state = env.reset()
 action = 0
 i = 0
 while True:
-    i += 1
-    print(i)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             env.close()
