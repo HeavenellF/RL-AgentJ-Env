@@ -15,11 +15,11 @@ import levelsobject
 #========================== AGENT CLASS ================================#
 class Player:
     def __init__(self):
-        self.player_stand = pygame.image.load('image/player/playerstand.png').convert_alpha()
-        self.player_walk_1 = pygame.image.load('image/player/playerwalk1.png').convert_alpha()
-        self.player_charge = pygame.image.load('image/player/playercharge.png').convert_alpha()
-        self.player_jump = pygame.image.load('image/player/playerjump.png').convert_alpha()
-        self.player_fell = pygame.image.load('image/player/playerfell.png').convert_alpha()
+        self.player_stand = pygame.image.load('Env/image/player/playerstand.png').convert_alpha()
+        self.player_walk_1 = pygame.image.load('Env/image/player/playerwalk1.png').convert_alpha()
+        self.player_charge = pygame.image.load('Env/image/player/playercharge.png').convert_alpha()
+        self.player_jump = pygame.image.load('Env/image/player/playerjump.png').convert_alpha()
+        self.player_fell = pygame.image.load('Env/image/player/playerfell.png').convert_alpha()
         self.player_state = [self.player_stand, self.player_walk_1, self.player_jump, self.player_fell]
         self.player_index = 0
 
@@ -63,19 +63,19 @@ class AgentJEnv(gym.Env):
         if self.render_mode is None:
             os.environ["SDL_VIDEODRIVER"] = "dummy"  # For headless mode
         pygame.init()
-        self.bgm_sound = pygame.mixer.Sound('sound/bgm.mp3')
+        self.bgm_sound = pygame.mixer.Sound('Env/sound/bgm.mp3')
         self.bgm_sound.set_volume(0.5)
-        self.finish_sound = pygame.mixer.Sound('sound/finish.mp3')
+        self.finish_sound = pygame.mixer.Sound('Env/sound/finish.mp3')
         self.finish_sound.set_volume(0.5)
-        self.wallbounce1_sound = pygame.mixer.Sound('sound/wallhit1.mp3')
+        self.wallbounce1_sound = pygame.mixer.Sound('Env/sound/wallhit1.mp3')
         self.wallbounce1_sound.set_volume(0.8)
-        self.wallbounce2_sound = pygame.mixer.Sound('sound/wallhit2.mp3')
+        self.wallbounce2_sound = pygame.mixer.Sound('Env/sound/wallhit2.mp3')
         self.wallbounce2_sound.set_volume(0.8)
-        self.wallbounce3_sound = pygame.mixer.Sound('sound/wallhit3.mp3')
+        self.wallbounce3_sound = pygame.mixer.Sound('Env/sound/wallhit3.mp3')
         self.wallbounce3_sound.set_volume(0.8)
-        self.jump_sound = pygame.mixer.Sound('sound/jump.mp3')
+        self.jump_sound = pygame.mixer.Sound('Env/sound/jump.mp3')
         self.jump_sound.set_volume(0.9)
-        self.fell_sound = pygame.mixer.Sound('sound/fell.mp3')
+        self.fell_sound = pygame.mixer.Sound('Env/sound/fell.mp3')
         self.fell_sound.set_volume(1)
         self.action_space = spaces.Discrete(5)
         self.observation_space = spaces.Box(
