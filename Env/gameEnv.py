@@ -60,8 +60,6 @@ class AgentJEnv(gym.Env):
         super(AgentJEnv, self).__init__()
         # Set the display driver to 'dummy' if running in headless mode
         self.render_mode = render_mode
-        if self.render_mode is None:
-            os.environ["SDL_VIDEODRIVER"] = "dummy"  # For headless mode
         pygame.init()
         self.bgm_sound = pygame.mixer.Sound('Env/sound/bgm.mp3')
         self.bgm_sound.set_volume(0.5)
@@ -80,7 +78,7 @@ class AgentJEnv(gym.Env):
         self.action_space = spaces.Discrete(5)
         self.observation_space = spaces.Box(
             low=np.array([0, 0, 0, -1, 0]),  # lower bounds of each component
-            high=np.array([np.inf, np.inf, 10, 1, 1]),  # upper bounds for each component
+            high=np.array([np.inf, np.inf, np.inf, 1, 1]),  # upper bounds for each component
             dtype=np.float32  # data type for each component (32-bit float)
         )
         self.reward_range = (-float('inf'), float('inf'))
@@ -89,16 +87,7 @@ class AgentJEnv(gym.Env):
         self.height = 900
         self.fps = 60
 
-
-        if self.render_mode == "human":
-            self.screen = pygame.display.set_mode((self.width, self.height))
-            pygame.display.set_caption('Agent J')
-            self.clock = pygame.time.Clock()
-        else:
-            pygame.display.set_mode((1,1))
-            self.screen = None
-            self.clock = None
-
+        self.init_screen()
         #========================== LEVELS OBJECT ================================#
         self.levels_object = [
             levelsobject.level1_object(self.width, self.height),
@@ -116,15 +105,30 @@ class AgentJEnv(gym.Env):
 
         self.level = 0
         #=========================================================================#
-        self.reset()
+    
+    def init_screen(self):
+        if self.render_mode is None:
+            os.environ["SDL_VIDEODRIVER"] = "dummy"  # For headless mode
+        if self.render_mode == "human":
+            self.screen = pygame.display.set_mode((self.width, self.height))
+            pygame.display.set_caption('Agent J')
+            self.clock = pygame.time.Clock()
+        else:
+            pygame.display.set_mode((1,1))
+            self.screen = None
+            self.clock = None
 
-    def reset(self):
+    def reset(self, render_mode=None):
+        self.render_mode = render_mode
+        self.init_screen()
         # Reset the game environtment
         self.P = Player() # Reset the player
         self.start_game()
-        return self.get_state()
+        self.state = self.get_state()
+        return self.state
 
     def step(self, action):
+        prev_state = self.get_state()
         if not self.P.midAir and not self.P.tired:
             if action == 0:    # Do nothing
                 self.P.midStrafe = False
@@ -146,14 +150,27 @@ class AgentJEnv(gym.Env):
                 self.play_sound('jump')
 
         self.game_logic()
+
+        new_state = self.get_state()
         
-        state = 0
-        reward = 0
+        reward = self.count_reward(prev_state, new_state)
         done = False
-        return state, reward, done
+        return new_state, reward, done
     
     def get_state(self):
-        return (self.level, self.P.player_rect.x, self.P.player_rect.y, self.P.player_gravity, self.P.player_direction)
+        return (self.level, self.P.player_rect.x, self.P.player_rect.y, self.P.player_direction, int(self.P.midAir))
+    
+    def count_reward(self, prev_state, new_state):
+        reward = 0
+        if new_state[0] > prev_state[0]:
+            reward += 10
+        if new_state[0] < prev_state[0]:
+            reward -= 10        
+        if new_state[2] < prev_state[2]:
+            reward += 1
+        if new_state[2] > prev_state[2]:
+            reward -= 1
+        return reward
 
     def render(self):
         if self.render_mode == "human":
@@ -165,6 +182,8 @@ class AgentJEnv(gym.Env):
         pygame.quit()
 
     def play_sound(self, type):
+        if self.render_mode != "human":
+            return
         if type == 'wall':
             random_number = random.randint(1, 3)
             if random_number == 1 : self.wallbounce1_sound.play()
@@ -174,10 +193,14 @@ class AgentJEnv(gym.Env):
             self.jump_sound.play()
         elif type == 'fell':
             self.fell_sound.play()
+        elif type == 'start':
+            self.bgm_sound.play(-1)
+        elif type == 'finish':
+            self.bgm_sound.stop()
 
     def start_game(self):
-        self.bgm_sound.stop()
-        self.bgm_sound.play(-1)
+        # self.play_sound('finish')    
+        # self.play_sound('start')
         self.level = 1
         self.P.player_rect = self.P.player_surf.get_rect(midbottom= (self.width/2,825))
 
