@@ -1,5 +1,6 @@
 import sys
 import os
+import random
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "Env"))
 
@@ -8,7 +9,7 @@ import pygame
 from Env.gameEnv import AgentJEnv
 
 env = AgentJEnv(render_mode="human")
-state = env.reset()
+state = env.reset(render_mode="human")
 action = 0
 i = 0
 while True:
@@ -45,9 +46,12 @@ while True:
             if event.key == pygame.K_d and env.P.midStrafe:
                 action = 0  
 
+
     # action = random.choice([0, 1, 2, 3, 4])
     state, reward, done = env.step(action)
-
+    # if reward >= 1000:
+    #     print(reward)
+    print(reward, end="\r")
     # stop the jumping action
     if action in (3,4):
         action = 0
