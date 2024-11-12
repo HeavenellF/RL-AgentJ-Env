@@ -77,8 +77,8 @@ class AgentJEnv(gym.Env):
         self.fell_sound.set_volume(1)
         self.action_space = spaces.Discrete(5)
         self.observation_space = spaces.Box(
-            low=np.array([0, 0, 0, -1, 0]),  # lower bounds of each component
-            high=np.array([np.inf, np.inf, np.inf, 1, 1]),  # upper bounds for each component
+            low=np.array([0, 0, 0, -1]),  # lower bounds of each component
+            high=np.array([np.inf, np.inf, np.inf, 1]),  # upper bounds for each component
             dtype=np.float32  # data type for each component (32-bit float)
         )
         self.reward_range = (-float('inf'), float('inf'))
@@ -118,17 +118,18 @@ class AgentJEnv(gym.Env):
             self.screen = None
             self.clock = None
 
-    def reset(self, render_mode=None):
+    def reset(self, level, render_mode=None):
         self.render_mode = render_mode
         self.init_screen()
         # Reset the game environtment
         self.P = Player() # Reset the player
-        self.start_game()
+        self.start_game(level)
         self.state = self.get_state()
         return self.state
 
     def step(self, action):
-        prev_state = self.get_state()
+        prev_state = self.state
+        #prev_state = self.get_state()
         if not self.P.midAir and not self.P.tired:
             if action == 0:    # Do nothing
                 self.P.midStrafe = False
@@ -151,25 +152,31 @@ class AgentJEnv(gym.Env):
 
         self.game_logic()
 
-        new_state = self.get_state()
+        if self.P.midAir == False:
+            new_state = self.get_state()
+            self.state = new_state
+        else:
+            new_state = prev_state
         
         reward = self.count_reward(prev_state, new_state)
         done = False
         return new_state, reward, done
     
     def get_state(self):
-        return (self.level, self.P.player_rect.x, self.P.player_rect.y, self.P.player_direction, int(self.P.midAir))
+        return (self.level, self.P.player_rect.x, self.P.player_rect.y, self.P.player_direction)
     
     def count_reward(self, prev_state, new_state):
         reward = 0
-        if new_state[0] > prev_state[0]:
-            reward += 10
-        if new_state[0] < prev_state[0]:
-            reward -= 10        
-        if new_state[2] < prev_state[2]:
-            reward += 1
-        if new_state[2] > prev_state[2]:
-            reward -= 1
+        if new_state[0] != prev_state[0]:
+            if new_state[0] > prev_state[0]:
+                reward += 10
+            elif new_state[0] < prev_state[0]:
+                reward -= 10   
+        else:     
+            if new_state[2] < prev_state[2]:
+                reward += 1
+            if new_state[2] > prev_state[2]:
+                reward -= 1
         return reward
 
     def render(self):
@@ -198,10 +205,10 @@ class AgentJEnv(gym.Env):
         elif type == 'finish':
             self.bgm_sound.stop()
 
-    def start_game(self):
+    def start_game(self, level):
         # self.play_sound('finish')    
         # self.play_sound('start')
-        self.level = 1
+        self.level = level
         self.P.player_rect = self.P.player_surf.get_rect(midbottom= (self.width/2,825))
 
     def game_logic(self):
