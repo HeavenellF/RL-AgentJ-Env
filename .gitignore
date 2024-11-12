@@ -1,6 +1,7 @@
 __pycache__/
-main.py
-problem.py
+
+Problems.txt
 test.py
 test.ipynb
+main.py
 main.ipynb
