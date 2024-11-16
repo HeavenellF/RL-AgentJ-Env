@@ -8,7 +8,6 @@ import gym
 from gym import spaces
 import numpy as np
 
-from Button import mainMenu_elements, gameOver_elements
 from collision import get_collision_side
 import levelsobject
 
@@ -75,7 +74,7 @@ class AgentJEnv(gym.Env):
         self.jump_sound.set_volume(0.9)
         self.fell_sound = pygame.mixer.Sound('Env/sound/fell.mp3')
         self.fell_sound.set_volume(1)
-        self.action_space = spaces.Discrete(5)
+        self.action_space = spaces.Discrete(4)
         self.observation_space = spaces.Box(
             low=np.array([0, 0, 0, -1]),  # lower bounds of each component
             high=np.array([np.inf, np.inf, np.inf, 1]),  # upper bounds for each component
@@ -123,34 +122,32 @@ class AgentJEnv(gym.Env):
         self.init_screen()
         # Reset the game environtment
         self.P = Player() # Reset the player
-        self.start_game(level)
+        self.start_game(level, True)
         self.state = self.get_state()
         return self.state
 
     def step(self, action):
+
         prev_state = self.state
-        #prev_state = self.get_state()
         if not self.P.midAir and not self.P.tired:
-            if action == 0:    # Do nothing
-                self.P.midStrafe = False
-            elif action == 1:  # Move Left
+            if action == 0:  # Move Left
                 self.P.player_direction = -1
                 self.P.midStrafe = True
-            elif action == 2: # Move Right
+            elif action == 1: # Move Right
                 self.P.player_direction = 1
                 self.P.midStrafe = True
-            elif action == 3: # Jump Low
+            elif action == 2: # Jump Low
                 self.P.midStrafe = False
                 self.P.player_gravity = -13
                 self.P.midAir = True
                 self.play_sound('jump')
-            elif action == 4: # Jump High
+            elif action == 3: # Jump High
                 self.P.midStrafe = False
                 self.P.player_gravity = -19.5
                 self.P.midAir = True
                 self.play_sound('jump')
 
-        self.game_logic()
+        done = self.game_logic()
 
         if self.P.midAir == False:
             new_state = self.get_state()
@@ -158,8 +155,11 @@ class AgentJEnv(gym.Env):
         else:
             new_state = prev_state
         
+        # If reach next level then done
+        if new_state[0] != prev_state[0]:
+            done = True
+        
         reward = self.count_reward(prev_state, new_state)
-        done = False
         return new_state, reward, done
     
     def get_state(self):
@@ -205,11 +205,16 @@ class AgentJEnv(gym.Env):
         elif type == 'finish':
             self.bgm_sound.stop()
 
-    def start_game(self, level):
+    def start_game(self, level, r=False):
         # self.play_sound('finish')    
         # self.play_sound('start')
         self.level = level
-        self.P.player_rect = self.P.player_surf.get_rect(midbottom= (self.width/2,825))
+        if r:
+            random1 = random.randint(0, self.width)
+            random2 = random.randint(0, self.height)
+            self.P.player_rect = self.P.player_surf.get_rect(center=(random1, random2))
+        else:
+            self.P.player_rect = self.P.player_surf.get_rect(midbottom= (self.width/2,825))
 
     def game_logic(self):
         """" Game Logic """
@@ -286,10 +291,10 @@ class AgentJEnv(gym.Env):
         if self.level == len(self.levels_object):
             if (self.P.player_rect.right >= 460 and self.P.player_rect.right <= 740) or (self.P.player_rect.left >= 460 and self.P.player_rect.left <= 740):
                 if self.P.player_rect.centery <= 630:
-                    pygame.quit()
-                    exit()
+                    return True
 
         self.P.player_animation()
+        return False
 
 
 
